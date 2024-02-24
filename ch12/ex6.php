@@ -1,5 +1,11 @@
 <html>
 	<head>	
+		<style type="text/css">
+			table, th, td {
+			  border: 1px solid black;
+			  border-collapse: collapse;
+			}
+		</style>
 		<title>Electric Bill</title>
 	</head>
 	<body>
@@ -46,63 +52,79 @@
 	$bill=(100*$firstunit)+(100*$secondunit)+(100*$thirdunit)+($unit-300)*$fourthunit;
 	return $bill;
 	}
+
+
+	function result(){
+
+		$conn=mysqli_connect("localhost","root","");
 	
-	if(isset($_POST['submit']) && !empty($_POST['submit'])){
-	$owner=$_POST['name'];
-	$township=$_POST['township'];
-	$phone=$_POST['phone'];
-	$billdate=$_POST['billdate'];
-	$month=$_POST['month'];
-	$unit=$_POST['unit'];
-	
-	$conn=mysqli_connect("localhost","root","");
-	mysqli_select_db($conn,"mydatabase");
-	
-	if(!$conn){
-		die("Database connection fail:".mysqli_error());
+		if($conn){
+			if(!isset($_SESSION['createdb'])){
+				$query="CREATE DATABASE Electricbill";
+				mysqli_query($conn, $query);
+				$_SESSION['createdb']='created';
+			}
+				if(!isset($_SESSION['createtb'])){
+				mysqli_select_db($conn,"Electricbill");
+				$query = "CREATE TABLE Bill(ownner VARCHAR(30), township VARCHAR(30), unit VARCHAR(30), bill VARCHAR(30))";
+				mysqli_query($conn, $query);
+				$_SESSION['createtb']='created';
+			}
+		}else{
+			echo "Database connection fail:".mysqli_errno($conn);
+		}
+		
+		$ownner=$_POST['name'];
+		$township=$_POST['township'];
+		$unit=$_POST['unit'];
+		$bill = calculate($unit);
+
+		mysqli_select_db($conn,"Electricbill");
+		$query = "INSERT INTO Bill(ownner, township, unit, bill) VALUES('$ownner', '$township', '$unit', '$bill')";
+		mysqli_query($conn, $query);
+
+		$query = "SELECT * FROM Bill";
+		$result = mysqli_query($conn, $query);
+		$num_row = mysqli_num_rows($result);
+
+		?>
+		<table>
+			<tr>
+				<th>Name</th>
+				<th>City</th>
+				<th>Unit</th>
+				<th>Bill</th>
+			</tr>
+
+		<?php
+
+		for($i=0; $i<$num_row; $i++){
+			 $rows = mysqli_fetch_array($result);
+			 echo "<tr>";
+			 echo "<td>";
+			 echo $rows['ownner'];
+			 echo "</td>";
+			 echo "<td>";
+			 echo $rows['township'];
+			 echo "</td>";
+			 echo "<td>";
+			 echo $rows['unit'];
+			 echo "</td>";
+			 echo "<td>";
+			 echo $rows['bill'];
+			 echo "</td>";
+			 echo "</tr>";
+		}
+		?>
+		</table>
+		<?php
+			mysqli_close($conn);
 	}
-	
-	// $query="SHOW TABLES ";
-	// $tablename="user";
-	// $result=mysqli_query($conn,$query);
-	// if($result){
-	// 	$num=mysqli_num_rows($result);
-	// 	$rows=mysqli_fetch_array($result);
-	// 	print_r($rows);
-		// for($i=0;$i<$num;$i++){
-		// 	echo "$rows[$i],$tablename";
-		// 	if(!strcmp($rows[$i],$tablename)){
-		// 		echo 'exit';
-		// 	}else{
-		// 		echo 'not exit';
-		// 	}
-		// }
-	// }else{
-	// 	echo "Something went wrong".mysqli_error();
-	// }
-	
-		// $query="CREATE TABLE ElectricBill(Name varchar(15), Township varchar(15), AmountOfConsumption int, TotalAmount int)";
-		// $result=mysqli_query($conn,$query);
-		// if($result){
-		// 	echo "Table created!";
-		// }else{
-		// 	echo "Something went wrong:".mysqli_error($result);
-		// }
-		// $totalcost=calculate($unit);
-		// $query="INSERT INTO ElectricBill( Name,Township, AmountOfConsumption, TotalAmount)
-		// 		VALUES('$owner','$township','$unit','$totalcost') ";
-		// $result=mysqli_query($conn, $query);
-		// if($result){
-		// 	echo "Insert new rows";
-		// }else{
-		// 	echo "Something went wrong:".mysqli_error($result);
-		// }
-		$query="SELECT * FROM ElectricBill";
-		$result=mysqli_query($conn,$query);
-		$rows=mysqli_fetch_array($result);
-		print_r($rows);
-	
+
+	session_start();
+	 if(isset($_POST['submit'])){
+		result();
 	}
-	mysqli_close($conn);
+
 ?>
 
